@@ -1,0 +1,91 @@
+SQL> 
+SQL> --Retrieve movie titles from the imdb00.TITLE_BASICS table (alias as tb) and their average ratings from the imdb00.TITLE_RATINGS table (alias as tr)
+SQL> SELECT tb.PRIMARYTITLE AS "Movie Title", tr.AVERAGERATING AS "Average Rating"
+  2  FROM imdb00.TITLE_BASICS tb
+  3  --Join the two tables (based on their shared attribute) where the title type is 'movie', the release year is between 2001 and 2010,
+  4  --the number of votes is at least 150000, the genre combination is 'Action' and 'Thriller'
+  5  JOIN imdb00.TITLE_RATINGS tr ON tb.TCONST = tr.TCONST
+  6  WHERE tb.TITLETYPE = 'movie'
+  7  AND tb.STARTYEAR BETWEEN '2001' AND '2010'
+  8  AND tr.NUMVOTES >= 150000
+  9  AND tb.GENRES LIKE '%Action%'
+ 10  AND tb.GENRES LIKE '%Thriller%'
+ 11  --Order the results retrieved by the average rating in a descending order
+ 12  ORDER BY tr.AVERAGERATING DESC
+ 13  --Fetch only the top 5 results
+ 14  FETCH FIRST 5 ROWS ONLY;
+
+Movie Title                                                                                                                                                                                             
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+Average Rating                                                                                                                                                                                          
+--------------                                                                                                                                                                                          
+The Bourne Ultimatum                                                                                                                                                                                    
+             8                                                                                                                                                                                          
+                                                                                                                                                                                                        
+Casino Royale                                                                                                                                                                                           
+             8                                                                                                                                                                                          
+                                                                                                                                                                                                        
+Kill Bill: Vol. 2                                                                                                                                                                                       
+             8                                                                                                                                                                                          
+                                                                                                                                                                                                        
+The Bourne Identity                                                                                                                                                                                     
+           7.9                                                                                                                                                                                          
+                                                                                                                                                                                                        
+District 9                                                                                                                                                                                              
+           7.9                                                                                                                                                                                          
+                                                                                                                                                                                                        
+
+SQL> 
+SQL> --EXPLAIN statement to explain the query plan
+SQL> EXPLAIN PLAN
+  2  FOR
+  3  SELECT tb.PRIMARYTITLE AS "Movie Title", tr.AVERAGERATING AS "Average Rating"
+  4  FROM imdb00.TITLE_BASICS tb
+  5  JOIN imdb00.TITLE_RATINGS tr ON tb.TCONST = tr.TCONST
+  6  WHERE tb.TITLETYPE = 'movie'
+  7  AND tb.STARTYEAR BETWEEN '2001' AND '2010'
+  8  AND tr.NUMVOTES >= 150000
+  9  AND tb.GENRES LIKE '%Action%'
+ 10  AND tb.GENRES LIKE '%Thriller%'
+ 11  ORDER BY tr.AVERAGERATING DESC
+ 12  FETCH FIRST 5 ROWS ONLY;
+
+Explained.
+
+SQL> 
+SQL> --Display the query plan
+SQL> SELECT * FROM TABLE(DBMS_XPLAN.DISPLAY);
+
+PLAN_TABLE_OUTPUT                                                                                                                                                                                       
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+Plan hash value: 2653010624                                                                                                                                                                             
+                                                                                                                                                                                                        
+------------------------------------------------------------------------------------------------                                                                                                        
+| Id  | Operation                      | Name          | Rows  | Bytes | Cost (%CPU)| Time     |                                                                                                        
+------------------------------------------------------------------------------------------------                                                                                                        
+|   0 | SELECT STATEMENT               |               |     5 |  5205 |  3846   (1)| 00:00:01 |                                                                                                        
+|*  1 |  VIEW                          |               |     5 |  5205 |  3846   (1)| 00:00:01 |                                                                                                        
+|*  2 |   WINDOW SORT PUSHED RANK      |               |   276 | 31740 |  3846   (1)| 00:00:01 |                                                                                                        
+|   3 |    NESTED LOOPS                |               |   276 | 31740 |  3845   (1)| 00:00:01 |                                                                                                        
+|   4 |     NESTED LOOPS               |               |  1380 | 31740 |  3845   (1)| 00:00:01 |                                                                                                        
+|*  5 |      TABLE ACCESS FULL         | TITLE_RATINGS |  1380 | 23460 |  1084   (2)| 00:00:01 |                                                                                                        
+|*  6 |      INDEX UNIQUE SCAN         | SYS_C00547784 |     1 |       |     1   (0)| 00:00:01 |                                                                                                        
+|*  7 |     TABLE ACCESS BY INDEX ROWID| TITLE_BASICS  |     1 |    98 |     2   (0)| 00:00:01 |                                                                                                        
+------------------------------------------------------------------------------------------------                                                                                                        
+                                                                                                                                                                                                        
+Predicate Information (identified by operation id):                                                                                                                                                     
+---------------------------------------------------                                                                                                                                                     
+                                                                                                                                                                                                        
+   1 - filter("from$_subquery$_004"."rowlimit_$$_rownumber"<=5)                                                                                                                                         
+   2 - filter(ROW_NUMBER() OVER ( ORDER BY INTERNAL_FUNCTION("TR"."AVERAGERATING") DESC                                                                                                                 
+              )<=5)                                                                                                                                                                                     
+   5 - filter("TR"."NUMVOTES">=150000)                                                                                                                                                                  
+   6 - access("TB"."TCONST"="TR"."TCONST")                                                                                                                                                              
+   7 - filter("TB"."TITLETYPE"=U'movie' AND "TB"."STARTYEAR"<='2010' AND "TB"."GENRES"                                                                                                                  
+              LIKE U'%Action%' AND "TB"."GENRES" LIKE U'%Thriller%' AND "TB"."STARTYEAR">='2001' AND                                                                                                    
+              "TB"."GENRES" IS NOT NULL AND "TB"."GENRES" IS NOT NULL)                                                                                                                                  
+
+26 rows selected.
+
+SQL> 
+SQL> SPOOL OFF
